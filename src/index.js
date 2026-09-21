@@ -34,8 +34,8 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-  console.log(`UrbanLink API on : ${PORT}`)
-  console.log(`JWT_SECRET: ${process.env.JWT_SECRET}`) // secret logué au démarrage !
+  console.log(\`UrbanLink API on :\${PORT}\`)
+  console.log(\`JWT_SECRET: \${process.env.JWT_SECRET}\`) // secret logué au démarrage !
 })
 
 module.exports = app
