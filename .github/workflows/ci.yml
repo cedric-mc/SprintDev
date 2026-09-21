@@ -1,0 +1,35 @@
+name: UrbanLink CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  lint-and-test:
+    name: Lint & Jest Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      - name: Configuration de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Exécution du Linter
+        run: npm run lint
+
+      - name: Exécution des tests Jest
+        env:
+          NODE_ENV: test
+          JWT_SECRET: super_secret_key_for_ci_testing
+          DATABASE_URL: sqlite::memory:
+        run: "npm test -- --coverage --ci"
