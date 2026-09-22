@@ -32,3 +32,14 @@ jobs:
           JWT_SECRET: super_secret_key_for_ci_testing
           DATABASE_URL: "sqlite::memory:"
         run: "npm test -- --coverage --ci"
+
+      - name: Publication du rapport de coverage dans la CI
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; {
+            echo "### 📊 Rapport de couverture de code (Jest + Supertest)" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          }
+          fi
