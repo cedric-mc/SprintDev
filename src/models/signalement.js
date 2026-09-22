@@ -27,6 +27,9 @@ const SignalementModel = {
   findById: (id) =>
     db('signalements').where('id', id).first(),
 
+  mairieExists: id =>
+    db('mairies').where('id', id).first().then(Boolean),
+
   create: (data) =>
     db('signalements').insert(data).returning('id'),
 

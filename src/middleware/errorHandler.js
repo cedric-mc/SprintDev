@@ -14,7 +14,9 @@ const errorHandler = (err, req, res, next) => {
     ? 'Une erreur interne est survenue'
     : err.message
 
-  res.status(status).json({ error: message })
+  const response = { error: message }
+  if (err.details) response.details = err.details
+  res.status(status).json(response)
 }
 
 module.exports = { HttpError, errorHandler }
