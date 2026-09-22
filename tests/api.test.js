@@ -136,6 +136,44 @@ describe('API routes', () => {
       .resolves.toMatchObject({ titre: 'Banc cassé', statut: 'recu' })
   })
 
+  test('POST /api/signalements rejects invalid report data', async () => {
+    const response = await request(app)
+      .post('/api/signalements')
+      .send({
+        titre: '',
+        description: 'court',
+        categorie: 'Voirie',
+        latitude: '120',
+        longitude: '4.835',
+        mairie_id: '1',
+        citoyen_email: 'email-invalide',
+      })
+
+    expect(response.status).toBe(400)
+    expect(response.body.error).toBe('Les données du signalement sont invalides')
+    expect(response.body.details).toEqual(expect.arrayContaining([
+      'Le titre doit contenir entre 3 et 120 caractères',
+      'La latitude doit être comprise entre -90 et 90',
+      'Une adresse email valide est obligatoire',
+    ]))
+  })
+
+  test('POST /api/signalements rejects non-image uploads', async () => {
+    const response = await request(app)
+      .post('/api/signalements')
+      .field('titre', 'Photo interdite')
+      .field('description', 'Une description suffisamment longue')
+      .field('categorie', 'Voirie')
+      .field('latitude', '45.764')
+      .field('longitude', '4.835')
+      .field('mairie_id', '1')
+      .field('citoyen_email', 'citoyen@test.fr')
+      .attach('photo', Buffer.from('not an image'), 'document.txt')
+
+    expect(response.status).toBe(400)
+    expect(response.body.error).toBe('Le fichier doit être une image JPEG, PNG ou WebP')
+  })
+
   test('PATCH /api/signalements/:id/statut updates a report', async () => {
     const [id] = await db('signalements').insert({
       titre: 'Arbre tombé',
