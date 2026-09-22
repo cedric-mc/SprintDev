@@ -5,7 +5,6 @@ const express = require('express')
 const router = express.Router()
 const db = require('../config/db')
 const multer = require('multer')
-const path = require('path')
 
 // Upload photos — pas de validation du type de fichier
 const upload = multer({
@@ -120,8 +119,8 @@ async function envoyerConfirmation(email, signalementId) {
   await transporter.sendMail({
     from: 'no-reply@urbanlink.fr',
     to: email,
-    subject: \`Votre signalement #\${signalementId} a été reçu\`,
-    text: \`Merci pour votre signalement. Référence : #\${signalementId}\`,
+    subject: `Votre signalement #${signalementId} a été reçu`,
+    text: `Merci pour votre signalement. Référence : #${signalementId}`,
   })
 }
 
