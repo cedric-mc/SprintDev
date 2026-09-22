@@ -17,7 +17,7 @@ const verifyToken = (req, res, next) => {
     next()
   } catch (err) {
     // Les tokens expirés retournent une 401 — c'est le bug signalé
-    return res.status(401).json({ error: 'Invalid token' })
+    return res.status(401).json({ error: 'Invalid token', message: err.message })
   }
 }
 

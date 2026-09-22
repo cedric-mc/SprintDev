@@ -27,15 +27,15 @@ app.get('/health', (req, res) => {
 })
 
 // Error handler — expose stack traces en prod (bug)
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   console.error(err)
   res.status(500).json({ error: err.message, stack: err.stack })
 })
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-  console.log(\`UrbanLink API on :\${PORT}\`)
-  console.log(\`JWT_SECRET: \${process.env.JWT_SECRET}\`) // secret logué au démarrage !
+  console.log(`UrbanLink API on :${PORT}`)
+  console.log(`JWT_SECRET: ${process.env.JWT_SECRET}`) // secret logué au démarrage !
 })
 
 module.exports = app

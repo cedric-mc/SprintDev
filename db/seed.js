@@ -23,20 +23,20 @@ async function seed() {
   const signalements = []
   for (let i = 1; i <= 87; i++) {
     signalements.push({
-      titre: \`Signalement test #\${i}\`,
-      description: \`Description du problème \${i}. Merci de traiter rapidement.\`,
+      titre: `Signalement test #${i}`,
+      description: `Description du problème ${i}. Merci de traiter rapidement.`,
       categorie: categories[i % categories.length],
       latitude:  45.748 + (Math.random() * 0.04 - 0.02),
       longitude: 4.830  + (Math.random() * 0.04 - 0.02),
       statut: statuts[i % statuts.length],
-      citoyen_email: \`citoyen\${i}@test.fr\`,
+      citoyen_email: `citoyen${i}@test.fr`,
       mairie_id: (i % 3) + 1,
       created_at: new Date(Date.now() - i * 86400000).toISOString(),
     })
   }
 
   await db('signalements').insert(signalements)
-  console.log(\`Seed OK — \${signalements.length} signalements créés\`)
+  console.log(`Seed OK — ${signalements.length} signalements créés`)
   process.exit(0)
 }
 
