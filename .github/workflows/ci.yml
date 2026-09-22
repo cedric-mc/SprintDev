@@ -36,10 +36,9 @@ jobs:
       - name: Publication du rapport de coverage dans la CI
         if: always()
         run: |
-          if [ -f coverage/coverage-summary.json ]; {
+          if [ -f coverage/coverage-summary.json ]; then
             echo "### 📊 Rapport de couverture de code (Jest + Supertest)" >> $GITHUB_STEP_SUMMARY
             echo '```json' >> $GITHUB_STEP_SUMMARY
             cat coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
-          }
           fi
