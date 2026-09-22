@@ -1,0 +1,20 @@
+class HttpError extends Error {
+  constructor (status, message) {
+    super(message)
+    this.status = status
+  }
+}
+
+const errorHandler = (err, req, res, next) => {
+  void next
+  if (!err.status || err.status >= 500) console.error(err)
+
+  const status = err.status || 500
+  const message = status >= 500 && process.env.NODE_ENV === 'production'
+    ? 'Une erreur interne est survenue'
+    : err.message
+
+  res.status(status).json({ error: message })
+}
+
+module.exports = { HttpError, errorHandler }
