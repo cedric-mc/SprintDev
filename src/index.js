@@ -4,6 +4,7 @@
 
 const express = require('express')
 const cors = require('cors')
+const { errorHandler } = require('./middleware/errorHandler')
 require('dotenv').config()
 
 const app = express()
@@ -26,11 +27,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() })
 })
 
-// Error handler — expose stack traces en prod (bug)
-app.use((err, req, res) => {
-  console.error(err)
-  res.status(500).json({ error: err.message, stack: err.stack })
-})
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 if (require.main === module) {
