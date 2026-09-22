@@ -1,12 +1,12 @@
-# Daily Stand-up — Jour 1
+# Daily Stand-up — Jour 2
 
-**Date :** 2026-09-21
+**Date :** 2026-09-22
 **Participants :** Cédric MARIYA CONSTANTINE
 **Sprint en cours :** Sprint 1
 
 ---
 
-## 1. Ce qui a été réalisé depuis le dernier Daily (depuis le début du Sprint car c’est le premier Daily)
+## 1. Ce qui a été réalisé depuis le dernier Daily (Premier Daily techniquement car le J1 était un audit et un planning)
 
 - [x] **Audit du dépôt :** analyse de l’API Express, du client React, de la base SQLite/Knex, de l’authentification et des routes sensibles.
 - [x] **US-01 à US-10 :** rédaction et réalignement des fiches finales avec le backlog du PO, les critères d’acceptation, la MoSCoW, les points et les sprints.

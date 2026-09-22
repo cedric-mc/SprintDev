@@ -1,9 +1,9 @@
 # Sprint Planning 1 — UrbanLink
 
-**Date :** 2026-09-22  
+**Date :** 2026-09-21
 **Sprint :** Sprint 1  
-**Durée :** J1 à J3 matin, selon le calendrier du workshop  
-**Participants :** Cédric MARIYA CONSTANTINE, [Nom Dev 2 à compléter], Romain Castelli (PO à confirmer)
+**Durée :** J1 à J3 matin, selon le calendrier du workshop
+**Participants :** Cédric MARIYA CONSTANTINE
 
 ## Sprint Goal
 
@@ -13,11 +13,11 @@
 
 | ID | User Story | MoSCoW | Points | Sprint |
 | --- | --- | --- | ---: | --- |
+| US-09 | Lancer lint et tests via GitHub Actions à chaque push | Must Have | 3 | S1 |
+| US-08 | Atteindre une couverture de tests API d’au moins 70 % | Must Have | 5 | S1 |
 | US-01 | Créer un signalement avec catégorie, description et photo | Must Have | 5 | S1 |
 | US-02 | Voir les signalements sur une carte interactive | Must Have | 8 | S1 |
 | US-03 | Changer le statut d’un signalement | Must Have | 5 | S1 |
-| US-08 | Atteindre une couverture de tests API d’au moins 70 % | Must Have | 5 | S1 |
-| US-09 | Lancer lint et tests via GitHub Actions à chaque push | Must Have | 3 | S1 |
 
 **Total planifié : 26 points.**
 
