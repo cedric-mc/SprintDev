@@ -12,7 +12,7 @@ Sans audit sérieux, vous planifiez dans le vide.
 
 ## 📂 Structure du projet
 
-```
+```tree
 urbanlink/
 ├── .env                          ← à examiner en priorité
 ├── .gitignore                    ← bien configuré ?
@@ -46,29 +46,34 @@ urbanlink/
 ## 🔍 Grille d'audit J1 — à compléter avant le Sprint Planning
 
 ### A. Sécurité
+
 - [ ] Des secrets sont-ils exposés quelque part ? Lesquels ? Où ?
 - [ ] Les routes `/api/admin` et `/api/debug` sont-elles protégées ?
 - [ ] Le middleware d'auth est-il actif ? Pourquoi a-t-il été désactivé ?
 - [ ] Y a-t-il des risques XSS, injection, ou problèmes RGPD dans le code ?
 
 ### B. Qualité du code back-end
+
 - [ ] Y a-t-il une séparation entre routes, modèles et services ?
 - [ ] `src/models/signalement.js` est-il utilisé dans les routes ? Que faudrait-il changer ?
 - [ ] Y a-t-il des N+1 queries ? Où ? Quel impact ?
 - [ ] La gestion d'erreur est-elle cohérente et complète ?
 
 ### C. Qualité du front-end
+
 - [ ] `useSignalements.js` est-il utilisé dans les composants ? Que devrait-il remplacer ?
 - [ ] Y a-t-il des problèmes d'accessibilité dans les formulaires ?
 - [ ] La carte Leaflet a-t-elle des bugs identifiables sans lancer l'app ?
 - [ ] Qu'est-ce qui pose un problème de performance à grande échelle ?
 
 ### D. Tests et CI
+
 - [ ] Y a-t-il des tests ? Que teste le script `npm test` actuellement ?
 - [ ] Y a-t-il un pipeline CI en place ?
 - [ ] Listez les 5 routes les plus critiques à tester en priorité.
 
 ### E. Architecture et dette technique
+
 - [ ] Identifiez la logique métier dupliquée entre les fichiers.
 - [ ] Quelles refactorisations prioriserez-vous dans le Sprint 1 ?
 - [ ] Établissez votre Definition of Done pour ce projet.

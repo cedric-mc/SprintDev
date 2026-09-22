@@ -4,16 +4,18 @@
 import React, { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import axios from 'axios'
-// BUG : import du CSS Leaflet manquant — les icônes n'apparaissent pas
-// import 'leaflet/dist/leaflet.css'
+import 'leaflet/dist/leaflet.css'
 
 // Fix icônes Leaflet — copié de Stack Overflow, pas compris pourquoi ça marche
 import L from 'leaflet'
+import markerRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import markerUrl from 'leaflet/dist/images/marker-icon.png'
+import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+  iconRetinaUrl: markerRetinaUrl,
+  iconUrl: markerUrl,
+  shadowUrl: markerShadowUrl,
 })
 
 export default function CarteSignalements() {

@@ -3,20 +3,21 @@
   "version": "0.8.2",
   "private": true,
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
     "axios": "^1.6.2",
     "leaflet": "^1.9.4",
-    "react-leaflet": "^4.2.1"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^7.18.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test"
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
-    "react-scripts": "5.0.1"
-  },
-  "proxy": "http://localhost:3001"
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest"
+  }
 }
