@@ -31,5 +31,6 @@ jobs:
         env:
           NODE_ENV: test
           JWT_SECRET: super_secret_key_for_ci_testing
-          DATABASE_URL: sqlite::memory:
+          DATABASE_URL: "sqlite::memory:"
         run: "npm test -- --coverage --ci"
+
