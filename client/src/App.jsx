@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import ListeSignalements from './pages/ListeSignalements'
 import NouveauSignalement from './pages/NouveauSignalement'
 import CarteSignalements from './pages/CarteSignalements'
-// import DetailSignalement from './pages/DetailSignalement' // pas encore fait
+import DetailSignalement from './pages/DetailSignalement'
 
 function App() {
   return (
@@ -24,6 +24,7 @@ function App() {
           <Route path="/" element={<ListeSignalements />} />
           <Route path="/signalements" element={<ListeSignalements />} />
           <Route path="/carte" element={<CarteSignalements />} />
+          <Route path="/signalements/:id" element={<DetailSignalement />} />
           <Route path="/nouveau" element={<NouveauSignalement />} />
           {/* Route 404 manquante */}
         </Routes>
