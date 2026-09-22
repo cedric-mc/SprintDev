@@ -2,5 +2,5 @@ node_modules/
 *.db
 dist/
 .DS_Store
-# .env pas ignoré — Baptiste trouvait ça pratique. À corriger !!
+.env
 coverage/

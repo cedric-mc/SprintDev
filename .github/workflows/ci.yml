@@ -32,3 +32,38 @@ jobs:
           JWT_SECRET: super_secret_key_for_ci_testing
           DATABASE_URL: "sqlite::memory:"
         run: "npm test -- --coverage --ci"
+
+      - name: Publication du rapport de coverage dans la CI
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "coverage/coverage-summary.json";
+            if (!fs.existsSync(path)) process.exit(0);
+
+            const data = JSON.parse(fs.readFileSync(path, "utf8"));
+            const total = data.total;
+
+            const pct = (n) => `${n}%`;
+            const badge = (n) => (n >= 80 ? "🟢" : n >= 60 ? "🟡" : "🔴");
+
+            let out = "### 📊 Rapport de couverture de code (Jest + Supertest)\n\n";
+            out += "| Métrique | Couverture | |\n";
+            out += "|---|---|---|\n";
+            out += `| Lignes | ${pct(total.lines.pct)} | ${badge(total.lines.pct)} |\n`;
+            out += `| Fonctions | ${pct(total.functions.pct)} | ${badge(total.functions.pct)} |\n`;
+            out += `| Branches | ${pct(total.branches.pct)} | ${badge(total.branches.pct)} |\n`;
+            out += `| Instructions | ${pct(total.statements.pct)} | ${badge(total.statements.pct)} |\n`;
+
+            out += "\n<details><summary>Détail par fichier</summary>\n\n";
+            out += "| Fichier | Lignes | Fonctions | Branches |\n";
+            out += "|---|---|---|---|\n";
+            for (const [file, cov] of Object.entries(data)) {
+              if (file === "total") continue;
+              const short = file.split("/").slice(-2).join("/");
+              out += `| ${short} | ${cov.lines.pct}% | ${cov.functions.pct}% | ${cov.branches.pct}% |\n`;
+            }
+            out += "\n</details>\n";
+
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out);
+          '
