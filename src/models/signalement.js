@@ -25,7 +25,10 @@ const SignalementModel = {
       }))),
 
   findById: (id) =>
-    db('signalements').where('id', id).first(),
+    db('signalements').where('id', id).select(
+      'id', 'titre', 'description', 'categorie', 'latitude', 'longitude',
+      'statut', 'photo_path', 'mairie_id', 'created_at', 'updated_at',
+    ).first(),
 
   mairieExists: id =>
     db('mairies').where('id', id).first().then(Boolean),
@@ -33,8 +36,25 @@ const SignalementModel = {
   create: (data) =>
     db('signalements').insert(data).returning('id'),
 
-  updateStatut: (id, statut) =>
-    db('signalements').where('id', id).update({ statut, updated_at: new Date() }),
+  updateStatut: async (id, statut, agentId, mairieId) => db.transaction(async trx => {
+    const signalement = await trx('signalements').where({ id }).first()
+    if (!signalement) return null
+    if (String(signalement.mairie_id) !== String(mairieId)) return false
+
+    const updated = await trx('signalements')
+      .where({ id, statut: signalement.statut })
+      .update({ statut, updated_at: new Date().toISOString() })
+    if (updated !== 1) return false
+
+    await trx('statut_historique').insert({
+      signalement_id: id,
+      ancien_statut: signalement.statut,
+      nouveau_statut: statut,
+      agent_id: agentId,
+      created_at: new Date().toISOString(),
+    })
+    return { ...signalement, statut }
+  }),
 
   remove: id =>
     db('signalements').where('id', id).delete(),

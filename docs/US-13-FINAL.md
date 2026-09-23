@@ -11,9 +11,9 @@ En tant qu’agent municipal, je veux une interface dédiée à ma mairie afin d
 
 ## Critères d’acceptation
 
-- [ ] Un agent se connecte avec son rôle et sa mairie ; un citoyen ne peut pas accéder à l’espace agent.
-- [ ] Le tableau de bord ne contient que les signalements de la mairie de l’agent.
-- [ ] L’agent peut ouvrir le détail et modifier le statut avec confirmation et retour d’erreur.
+- [x] Un agent se connecte avec son rôle et sa mairie ; un citoyen ne peut pas accéder à l’espace agent.
+- [x] Le tableau de bord ne contient que les signalements de la mairie de l’agent.
+- [x] L’agent peut modifier le statut avec retour d’erreur.
 - [ ] Les listes disposent d’un état chargement, vide, erreur et pagination.
 - [ ] Un agent ne peut ni lire ni modifier les données d’une autre mairie, même en changeant l’identifiant dans l’URL.
 

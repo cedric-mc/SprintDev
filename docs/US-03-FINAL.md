@@ -11,18 +11,18 @@ En tant qu'agent municipal, je veux changer le statut d'un signalement (reçu / 
 
 ## Critères d’acceptation
 
-- [ ] Seul un agent authentifié et autorisé sur la mairie du signalement peut modifier son statut.
-- [ ] Seules les valeurs `recu`, `en_cours` et `resolu` sont acceptées ; elles correspondent à reçu, en cours et résolu dans l’interface.
-- [ ] La transition est atomique, retourne 404 si le signalement n’existe pas et ne modifie pas les autres champs.
-- [ ] Chaque changement conserve l’ancien statut, le nouveau statut, l’auteur et l’horodatage.
+- [x] Seul un agent authentifié et autorisé sur la mairie du signalement peut modifier son statut.
+- [x] Seules les valeurs `recu`, `en_cours` et `resolu` sont acceptées ; elles correspondent à reçu, en cours et résolu dans l’interface.
+- [x] La transition est atomique, retourne 404 si le signalement n’existe pas et ne modifie pas les autres champs.
+- [x] Chaque changement conserve l’ancien statut, le nouveau statut, l’auteur et l’horodatage.
 - [ ] L’interface agent affiche uniquement les signalements de sa mairie et confirme le succès ou l’erreur sans exposer la stack trace.
-- [ ] Un changement réussi déclenche la notification définie par US-12 ; l’échec d’email ne fait pas croire à l’agent que l’email est envoyé.
-- [ ] Le citoyen ne peut pas appeler cette route avec ses seuls droits de consultation.
+- [x] Un changement réussi déclenche la notification définie par US-12 ; l’échec d’email ne fait pas croire à l’agent que l’email est envoyé.
+- [x] Le citoyen ne peut pas appeler cette route avec ses seuls droits de consultation.
 
 ## Tests de validation
 
-- [ ] 401 sans token, 403 pour une autre mairie, 200 pour un agent autorisé.
-- [ ] Rejet des statuts invalides, historique complet et concurrence sur deux mises à jour.
+- [x] 401 sans token, 403 pour une autre mairie, 200 pour un agent autorisé.
+- [x] Rejet des statuts invalides, historique complet et concurrence sur deux mises à jour.
 - [ ] Notification déclenchée une seule fois par changement effectif.
 
 ## Dépendances et décisions

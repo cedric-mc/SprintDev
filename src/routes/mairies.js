@@ -22,6 +22,7 @@ router.get('/:id', async (req, res) => {
     const signalements = await db('signalements')
       .where('mairie_id', req.params.id)
       .orderBy('created_at', 'desc')
+      .select('id', 'titre', 'description', 'categorie', 'latitude', 'longitude', 'statut', 'photo_path', 'mairie_id', 'created_at', 'updated_at')
 
     res.json({ ...mairie, signalements })
   } catch (err) {

@@ -1,80 +1,59 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
-import L from 'leaflet'
-import markerRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
-import markerUrl from 'leaflet/dist/images/marker-icon.png'
-import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
-import 'leaflet/dist/leaflet.css'
-import '../styles/carte.css'
+import { Link } from 'react-router-dom'
 import { useSignalements } from '../hooks/useSignalements'
+import 'leaflet/dist/leaflet.css'
+import markerRetinaIcon from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+
+// Fix icônes Leaflet — copié de Stack Overflow, pas compris pourquoi ça marche
+import L from 'leaflet'
+import '../styles/carte.css'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerRetinaUrl,
-  iconUrl: markerUrl,
-  shadowUrl: markerShadowUrl,
+  iconRetinaUrl: markerRetinaIcon,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
 })
-
-const isValidCoordinate = signalement => {
-  const latitude = Number(signalement.latitude)
-  const longitude = Number(signalement.longitude)
-  return Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 &&
-    Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
-}
-
-const formatDate = value => {
-  if (!value) return 'Date inconnue'
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value))
-}
 
 export default function CarteSignalements() {
   const { signalements, loading, error } = useSignalements()
-  const points = signalements.filter(isValidCoordinate)
+  const points = signalements.filter(signalement => {
+    const latitude = Number(signalement.latitude)
+    const longitude = Number(signalement.longitude)
+    return Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+      && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
+  })
 
   return (
-    <main className="map-page">
-      <div className="map-heading">
-        <div>
-          <h1>Carte des signalements</h1>
-          <p aria-live="polite">{points.length} signalement{points.length > 1 ? 's' : ''} localisé{points.length > 1 ? 's' : ''}</p>
-        </div>
-      </div>
-
-      {loading && <p className="map-state" role="status">Chargement des signalements...</p>}
-      {error && <p className="map-state map-state-error" role="alert">Impossible de charger la carte pour le moment.</p>}
-      {!loading && !error && points.length === 0 && (
-        <p className="map-state" role="status">Aucun signalement géolocalisé à afficher.</p>
-      )}
-
-      {!loading && !error && points.length > 0 && (
-        <div className="map-frame" aria-label="Carte interactive des signalements">
-          <MapContainer center={[45.764, 4.835]} zoom={13} className="map-container">
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="&copy; OpenStreetMap contributors"
-            />
-            <MarkerClusterGroup chunkedLoading={points.length > 50}>
-              {points.map(signalement => (
-                <Marker
-                  key={signalement.id}
-                  position={[Number(signalement.latitude), Number(signalement.longitude)]}
-                  alt={signalement.titre}
-                >
-                  <Popup>
-                    <strong>{signalement.titre}</strong>
-                    <br />Catégorie : {signalement.categorie || 'Non précisée'}
-                    <br />Statut : {signalement.statut}
-                    <br />Date : {formatDate(signalement.created_at)}
-                    <br /><Link to={`/signalements/${signalement.id}`}>Voir le détail</Link>
-                  </Popup>
-                </Marker>
-              ))}
-            </MarkerClusterGroup>
-          </MapContainer>
-        </div>
-      )}
-    </main>
+    <div>
+      <h1 style={{ padding: '20px 20px 0' }}>Carte des signalements</h1>
+      <p role="status" style={{ padding: '0 20px' }}>
+        {loading ? 'Chargement des signalements...' : error ? 'Impossible de charger les signalements.' : !points.length ? 'Aucun signalement géolocalisé.' : `${points.length} signalement(s) affiché(s)`}
+      </p>
+      <MapContainer center={[45.764, 4.835]} zoom={13}
+        aria-label="Carte interactive des signalements"
+        style={{ height: 'min(70vh, 600px)', minHeight: 360, margin: 20 }}>
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="OpenStreetMap"
+        />
+        <MarkerClusterGroup chunkedLoading>
+          {points.map(s => (
+            <Marker key={s.id} position={[Number(s.latitude), Number(s.longitude)]}>
+              <Popup>
+                <strong>{s.titre}</strong><br />
+                {s.categorie} · {s.statut}<br />
+                {s.created_at ? new Date(s.created_at).toLocaleDateString('fr-FR') : ''}<br />
+                <Link to={`/signalements/${s.id}`}>Voir le détail</Link>
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
+      </MapContainer>
+    </div>
   )
 }

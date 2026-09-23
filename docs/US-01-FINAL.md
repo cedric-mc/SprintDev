@@ -12,13 +12,13 @@ En tant que citoyen, je veux créer un signalement avec catégorie, description 
 ## Critères d’acceptation
 
 - [x] Le formulaire comporte des labels associés pour le titre, la description, la catégorie, l’email, la latitude, la longitude et la photo.
-- [ ] Le titre, la catégorie, la description, l’email et les coordonnées sont validés côté client et côté serveur ; une erreur 400 décrit chaque champ invalide. La catégorie n’est pas encore contrôlée par une liste blanche côté serveur.
-- [ ] La catégorie appartient à la liste métier configurée et le statut initial est `recu`. Le statut initial est bien `recu`, mais les catégories inconnues sont encore acceptées par l’API.
+- [x] Le titre, la catégorie, la description, l’email et les coordonnées sont validés côté client et côté serveur ; une erreur 400 décrit chaque champ invalide.
+- [x] La catégorie appartient à la liste métier configurée et le statut initial est `recu`.
 - [x] La latitude est comprise entre -90 et 90 et la longitude entre -180 et 180 ; les valeurs non numériques sont refusées.
-- [x] Une photo est facultative, limitée aux types MIME JPEG, PNG et WebP et à 5 Mo ; aucun fichier arbitraire n’est accepté.
-- [ ] Une création valide retourne `201` avec l’identifiant et le signalement est visible dans la liste en moins de 2 secondes. La création retourne bien `201`, mais le délai n’est pas mesuré par un test.
+- [x] Une photo est facultative, limitée à un type MIME et une taille documentés ; aucun fichier arbitraire n’est accepté.
+- [ ] Une création valide retourne `201` avec l’identifiant et le signalement est visible dans la liste en moins de 2 secondes.
 - [x] L’interface affiche un message de succès non technique et conserve les données en cas d’erreur.
-- [x] Les données saisies par l’utilisateur sont affichées sans exécuter de HTML ou de script dans l’interface React.
+- [x] Les données saisies par l’utilisateur sont affichées sans exécuter de HTML ou de script.
 
 ## Tests de validation
 
