@@ -1,24 +1,26 @@
-// Middleware JWT — écrit mais jamais utilisé
-// Désactivé car bug d'expiration de token (Rayan, mars 2024)
-// TODO : débugger et réactiver dans index.js
-
 const jwt = require('jsonwebtoken')
 
+const jwtSecret = () => process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change'
+
 const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1]
-  if (!token) return res.status(401).json({ error: 'No token provided' })
+  const authorization = req.headers.authorization || ''
+  const [scheme, token] = authorization.split(' ')
+  if (scheme !== 'Bearer' || !token) return res.status(401).json({ error: 'Authentification requise' })
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change' // fallback dangereux
-    )
+    const decoded = jwt.verify(token, jwtSecret())
     req.user = decoded
     next()
-  } catch (err) {
-    // Les tokens expirés retournent une 401 — c'est le bug signalé
-    return res.status(401).json({ error: 'Invalid token', message: err.message })
+  } catch {
+    return res.status(401).json({ error: 'Authentification invalide' })
   }
 }
 
-module.exports = { verifyToken }
+const requireAgent = (req, res, next) => {
+  if (!req.user || !['agent', 'admin'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Droits insuffisants' })
+  }
+  next()
+}
+
+module.exports = { verifyToken, requireAgent }

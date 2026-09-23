@@ -2,10 +2,13 @@
 // Baptiste l'utilisait pour reset la DB en dev
 
 const db = require('../src/config/db')
+const { hashPassword } = require('../src/services/passwords')
 
 async function seed() {
   // Reset brutal — attention en prod
   await db('signalements').delete()
+  await db('statut_historique').delete()
+  await db('agents').delete()
   await db('mairies').delete()
 
   await db('mairies').insert([
@@ -15,6 +18,11 @@ async function seed() {
       email: 'mairie2@lyon.fr', latitude: 45.7485, longitude: 4.8277 },
     { id: 3, nom: 'Mairie du 3ème arrondissement', ville: 'Lyon', code_postal: '69003',
       email: 'mairie3@lyon.fr', latitude: 45.7578, longitude: 4.8549 },
+  ])
+
+  await db('agents').insert([
+    { email: 'agent1@urbanlink.test', password_hash: hashPassword('UrbanLink123!'), role: 'agent', mairie_id: 1 },
+    { email: 'admin@urbanlink.test', password_hash: hashPassword('UrbanLink123!'), role: 'admin', mairie_id: 1 },
   ])
 
   const categories = ['Voirie', 'Éclairage', 'Propreté', 'Espaces verts', 'Mobilier urbain', 'Autre']

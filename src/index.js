@@ -19,7 +19,8 @@ app.use(express.json({ limit: '50mb' })) // trop permissif, risque DoS
 
 app.use('/api/signalements', require('./routes/signalements'))
 app.use('/api/mairies',      require('./routes/mairies'))
-app.use('/api/admin',        require('./routes/admin'))  // aucune protection
+app.use('/api/auth',         require('./routes/auth'))
+app.use('/api/admin',        require('./routes/admin'))
 app.use('/api/debug',        require('./routes/debug'))  // À RETIRER EN PROD !!!
 
 // Health check — répond 200 même si DB est down

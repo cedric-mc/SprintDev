@@ -3,7 +3,7 @@ name: UrbanLink CI
 on:
   push:
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
 
 jobs:
   lint-and-test:

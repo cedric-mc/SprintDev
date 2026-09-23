@@ -4,8 +4,10 @@ process.env.NODE_ENV = 'test'
 process.env.DB_PATH = ':memory:'
 
 const request = require('supertest')
+const jwt = require('jsonwebtoken')
 const db = require('../src/config/db')
 const app = require('../src/index')
+const { hashPassword } = require('../src/services/passwords')
 
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => ({
@@ -19,6 +21,8 @@ describe('API routes', () => {
   })
 
   beforeEach(async () => {
+    await db('statut_historique').delete()
+    await db('agents').delete()
     await db('signalements').delete()
     await db('mairies').delete()
     await db('mairies').insert({
@@ -30,6 +34,7 @@ describe('API routes', () => {
       latitude: 45.764,
       longitude: 4.835,
     })
+    await db('agents').insert({ id: 1, email: 'agent@test.fr', password_hash: hashPassword('secret'), mairie_id: 1, role: 'agent' })
   })
 
   afterAll(async () => {
@@ -42,6 +47,25 @@ describe('API routes', () => {
     expect(response.status).toBe(200)
     expect(response.body.status).toBe('ok')
     expect(response.body.timestamp).toBeDefined()
+  })
+
+  test('POST /api/auth/login returns a token for a valid agent', async () => {
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'agent@test.fr', password: 'secret' })
+
+    expect(response.status).toBe(200)
+    expect(response.body.token).toBeDefined()
+    expect(response.body.user).toMatchObject({ role: 'agent', mairie_id: 1 })
+  })
+
+  test('POST /api/auth/login rejects invalid credentials', async () => {
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'agent@test.fr', password: 'wrong' })
+
+    expect(response.status).toBe(401)
+    expect(response.body.error).toBe('Identifiants invalides')
   })
 
   test('GET /api/mairies returns the available municipalities', async () => {
@@ -158,6 +182,15 @@ describe('API routes', () => {
     ]))
   })
 
+  test('POST /api/signalements rejects invalid fields with field details', async () => {
+    const response = await request(app)
+      .post('/api/signalements')
+      .send({ titre: '', description: '', categorie: 'Inconnue', latitude: 100, longitude: 'x', mairie_id: 1, citoyen_email: 'invalid' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.fields).toBeDefined()
+  })
+
   test('POST /api/signalements rejects non-image uploads', async () => {
     const response = await request(app)
       .post('/api/signalements')
@@ -174,7 +207,7 @@ describe('API routes', () => {
     expect(response.body.error).toBe('Le fichier doit être une image JPEG, PNG ou WebP')
   })
 
-  test('PATCH /api/signalements/:id/statut updates a report', async () => {
+  test('PATCH /api/signalements/:id/statut requires an authorized agent and records history', async () => {
     const [id] = await db('signalements').insert({
       titre: 'Arbre tombé',
       description: 'Intervention nécessaire',
@@ -184,13 +217,43 @@ describe('API routes', () => {
       created_at: new Date().toISOString(),
     })
 
-    const response = await request(app)
+    const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
+    const unauthorized = await request(app)
       .patch(`/api/signalements/${id}/statut`)
       .send({ statut: 'en_cours' })
+    const response = await request(app)
+      .patch(`/api/signalements/${id}/statut`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ statut: 'en_cours' })
 
+    expect(unauthorized.status).toBe(401)
     expect(response.status).toBe(200)
+    expect(response.body.notification).toBe('envoyee')
     await expect(db('signalements').where('id', id).first())
       .resolves.toMatchObject({ statut: 'en_cours' })
+    await expect(db('statut_historique').where({ signalement_id: id }))
+      .resolves.toMatchObject([expect.objectContaining({ ancien_statut: 'recu', nouveau_statut: 'en_cours', agent_id: 1 })])
+  })
+
+  test('PATCH /api/signalements/:id/statut rejects another municipality and invalid statuses', async () => {
+    const [id] = await db('signalements').insert({ titre: 'Panne', mairie_id: 1, statut: 'recu', created_at: new Date().toISOString() })
+    const otherMairieToken = jwt.sign({ id: 1, role: 'agent', mairie_id: 2 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
+    const invalid = await request(app)
+      .patch(`/api/signalements/${id}/statut`)
+      .set('Authorization', `Bearer ${otherMairieToken}`)
+      .send({ statut: 'invalide' })
+    const forbidden = await request(app)
+      .patch(`/api/signalements/${id}/statut`)
+      .set('Authorization', `Bearer ${otherMairieToken}`)
+      .send({ statut: 'resolu' })
+    const missing = await request(app)
+      .patch('/api/signalements/999/statut')
+      .set('Authorization', `Bearer ${otherMairieToken}`)
+      .send({ statut: 'resolu' })
+
+    expect(invalid.status).toBe(400)
+    expect(forbidden.status).toBe(403)
+    expect(missing.status).toBe(404)
   })
 
   test('DELETE /api/signalements/:id deletes a report', async () => {
@@ -215,12 +278,23 @@ describe('API routes', () => {
       created_at: new Date().toISOString(),
     })
 
-    const response = await request(app).get('/api/admin/stats')
+    const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
+    const response = await request(app).get('/api/admin/stats').set('Authorization', `Bearer ${token}`)
 
     expect(response.status).toBe(200)
     expect(response.body.totalSignalements.count).toBe(1)
     expect(response.body.parStatut[0].statut).toBe('resolu')
-    expect(response.body.recentsAvecEmails).toHaveLength(1)
+    expect(response.body.recents).toHaveLength(1)
+    expect(response.body.recents[0].citoyen_email).toBeUndefined()
+  })
+
+  test('GET /api/admin/signalements only returns the agent municipality', async () => {
+    await db('signalements').insert({ titre: 'Autre mairie', mairie_id: 2, statut: 'recu', created_at: new Date().toISOString() })
+    const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
+    const response = await request(app).get('/api/admin/signalements').set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.every(signalement => signalement.mairie_id === 1)).toBe(true)
   })
 
   test('DELETE /api/admin/signalements/purge removes old reports', async () => {
@@ -231,8 +305,10 @@ describe('API routes', () => {
       created_at: '2020-01-01T00:00:00.000Z',
     })
 
+    const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
     const response = await request(app)
       .delete('/api/admin/signalements/purge?avant_le=2021-01-01T00:00:00.000Z')
+      .set('Authorization', `Bearer ${token}`)
 
     expect(response.status).toBe(200)
     expect(response.body.deleted).toBe(1)

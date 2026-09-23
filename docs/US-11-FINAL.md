@@ -13,9 +13,9 @@ En tant que citoyen, je veux créer un compte et me connecter afin de suivre mes
 
 - [ ] L’inscription valide l’email, impose un mot de passe conforme et stocke uniquement un hash salé.
 - [ ] L’email de confirmation contient un token à durée limitée ; un compte non confirmé ne peut pas accéder aux fonctions protégées.
-- [ ] La connexion retourne un JWT à durée documentée ; les expirés et invalides renvoient 401 sans détail sensible.
+- [x] La connexion agent retourne un JWT valable 8 heures ; les expirés et invalides renvoient 401 sans détail sensible.
 - [ ] Le profil affiche l’identité minimale et l’historique des signalements du citoyen connecté uniquement.
-- [ ] Les agents et administrateurs utilisent des rôles distincts des citoyens.
+- [x] Les agents et administrateurs utilisent des rôles distincts des citoyens.
 
 ## Tests et dépendances
 

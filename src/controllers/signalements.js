@@ -1,7 +1,11 @@
 const multer = require('multer')
 const SignalementModel = require('../models/signalement')
 const { HttpError } = require('../middleware/errorHandler')
-const { sendConfirmation } = require('../services/email')
+const { sendConfirmation, sendStatusChange } = require('../services/email')
+
+const STATUTS = ['recu', 'en_cours', 'resolu']
+const CATEGORIES = ['Voirie', 'Éclairage', 'Propreté', 'Espaces verts', 'Mobilier urbain']
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const upload = multer({
   dest: 'uploads/',
@@ -29,8 +33,8 @@ const validateCreation = async (req, res, next) => {
   if (typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 2000) {
     errors.push('La description doit contenir entre 10 et 2000 caractères')
   }
-  if (typeof categorie !== 'string' || !categorie.trim() || categorie.trim().length > 80) {
-    errors.push('La catégorie est obligatoire et ne doit pas dépasser 80 caractères')
+  if (typeof categorie !== 'string' || !CATEGORIES.includes(categorie)) {
+    errors.push('La catégorie est inconnue')
   }
   if (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90) {
     errors.push('La latitude doit être comprise entre -90 et 90')
@@ -55,6 +59,11 @@ const validateCreation = async (req, res, next) => {
   next()
 }
 
+const uploadPhoto = (req, res, next) => upload.single('photo')(req, res, error => {
+  if (error) return next(error instanceof HttpError ? error : new HttpError(400, 'Photo invalide ou trop volumineuse'))
+  next()
+})
+
 const list = async (req, res) => {
   res.json(await SignalementModel.findAll())
 }
@@ -67,13 +76,27 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   const { titre, description, categorie, latitude, longitude, mairie_id, citoyen_email } = req.body
+  const errors = {}
+  const numericLatitude = Number(latitude)
+  const numericLongitude = Number(longitude)
+  const numericMairieId = Number(mairie_id)
+
+  if (!titre || titre.trim().length < 3) errors.titre = 'Le titre doit contenir au moins 3 caractères'
+  if (!description || description.trim().length < 10) errors.description = 'La description doit contenir au moins 10 caractères'
+  if (!CATEGORIES.includes(categorie)) errors.categorie = 'Catégorie inconnue'
+  if (!EMAIL_PATTERN.test(citoyen_email || '')) errors.citoyen_email = 'Adresse email invalide'
+  if (!Number.isFinite(numericLatitude) || numericLatitude < -90 || numericLatitude > 90) errors.latitude = 'Latitude invalide'
+  if (!Number.isFinite(numericLongitude) || numericLongitude < -180 || numericLongitude > 180) errors.longitude = 'Longitude invalide'
+  if (!Number.isInteger(numericMairieId) || numericMairieId < 1) errors.mairie_id = 'Mairie invalide'
+  if (Object.keys(errors).length) throw new HttpError(400, 'Données invalides', errors)
+
   const [created] = await SignalementModel.create({
     titre,
     description,
     categorie,
-    latitude: parseFloat(latitude),
-    longitude: parseFloat(longitude),
-    mairie_id: parseInt(mairie_id),
+    latitude: numericLatitude,
+    longitude: numericLongitude,
+    mairie_id: numericMairieId,
     citoyen_email,
     photo_path: req.file ? req.file.path : null,
     statut: 'recu',
@@ -90,8 +113,30 @@ const create = async (req, res) => {
 }
 
 const updateStatus = async (req, res) => {
-  await SignalementModel.updateStatut(req.params.id, req.body.statut)
-  res.json({ success: true })
+  const { statut } = req.body
+  if (!STATUTS.includes(statut)) throw new HttpError(400, 'Statut invalide')
+  if (!req.user.mairie_id || !req.user.id) throw new HttpError(403, 'Agent non rattaché à une mairie')
+
+  const updated = await SignalementModel.updateStatut(
+    req.params.id,
+    statut,
+    req.user.id,
+    req.user.mairie_id,
+  )
+  if (!updated) {
+    const exists = await SignalementModel.findById(req.params.id)
+    if (!exists) throw new HttpError(404, 'Not found')
+    throw new HttpError(403, 'Accès interdit')
+  }
+
+  let notification = 'envoyee'
+  try {
+    if (updated.citoyen_email) await sendStatusChange(updated.citoyen_email, updated.id, statut)
+  } catch (error) {
+    notification = 'echec'
+    console.error('Status email failed:', error.message)
+  }
+  res.json({ success: true, statut, notification })
 }
 
 const remove = async (req, res) => {
@@ -99,4 +144,4 @@ const remove = async (req, res) => {
   res.json({ success: true })
 }
 
-module.exports = { upload, validateCreation, list, getById, create, updateStatus, remove }
+module.exports = { upload, uploadPhoto, validateCreation, list, getById, create, updateStatus, remove }

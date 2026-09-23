@@ -11,8 +11,8 @@ En tant que développeur, je veux un pipeline GitHub Actions qui lance lint + te
 
 ## Critères d’acceptation
 
-- [ ] Le workflow s’exécute à chaque push et sur les pull requests ciblant `main`.
-- [ ] Il installe les dépendances avec `npm ci`, exécute `npm run lint` puis les tests Jest avec couverture.
+- [x] Le workflow s’exécute à chaque push et sur les pull requests ciblant `main`.
+- [x] Il installe les dépendances avec `npm ci`, exécute `npm run lint` puis les tests Jest avec couverture.
 - [ ] Un échec de lint ou de test rend le pipeline rouge ; le statut est configuré comme contrôle obligatoire dans la protection de `main`.
 - [ ] Le pipeline est visible et vert sur `main` après exécution réelle.
 - [ ] Le badge du README pointe vers le workflow et reflète son dernier état.
