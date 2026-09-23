@@ -8,7 +8,7 @@ import NouveauSignalement from './pages/NouveauSignalement'
 import CarteSignalements from './pages/CarteSignalements'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
-// import DetailSignalement from './pages/DetailSignalement' // pas encore fait
+import DetailSignalement from './pages/DetailSignalement'
 
 function App() {
   return (
