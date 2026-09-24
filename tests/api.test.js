@@ -360,6 +360,42 @@ describe('API routes', () => {
     expect(response.body.recents[0].citoyen_email).toBeUndefined()
   })
 
+  test('GET /api/admin/stats returns weekly scoped KPIs', async () => {
+    await db('signalements').insert([
+      { titre: 'Cette semaine', description: 'Donnée mairie une', categorie: 'Voirie', mairie_id: 1, statut: 'resolu', created_at: '2026-09-21T10:00:00.000Z', citoyen_email: 'secret@test.fr' },
+      { titre: 'Non résolu', description: 'Donnée non résolue', categorie: 'Voirie', mairie_id: 1, statut: 'recu', created_at: '2026-09-22T10:00:00.000Z' },
+      { titre: 'Autre mairie', description: 'Donnée exclue', categorie: 'Éclairage', mairie_id: 2, statut: 'resolu', created_at: '2026-09-22T10:00:00.000Z' },
+      { titre: 'Hors période', description: 'Donnée hors période', categorie: 'Propreté', mairie_id: 1, statut: 'recu', created_at: '2026-09-10T10:00:00.000Z' },
+    ])
+    const [resolvedId, otherResolvedId] = await db('signalements').whereIn('titre', ['Cette semaine', 'Autre mairie']).pluck('id')
+    await db('statut_historique').insert([
+      { signalement_id: resolvedId, ancien_statut: 'en_cours', nouveau_statut: 'resolu', agent_id: 1, created_at: '2026-09-23T10:00:00.000Z' },
+      { signalement_id: otherResolvedId, ancien_statut: 'en_cours', nouveau_statut: 'resolu', agent_id: 1, created_at: '2026-09-23T10:00:00.000Z' },
+    ])
+    const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
+    const response = await request(app).get('/api/admin/stats?debut=2026-09-21&fin=2026-09-27').set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.periode).toEqual({ debut: '2026-09-21', fin: '2026-09-27' })
+    expect(response.body.totalSignalements.count).toBe(2)
+    expect(response.body.parCategorie).toEqual([{ categorie: 'Voirie', count: 2 }])
+    expect(response.body.delaiMoyenTraitementHeures).toBe(48)
+    expect(response.body.recents.every(report => report.mairie_id === 1 && !report.citoyen_email)).toBe(true)
+
+    const empty = await request(app).get('/api/admin/stats?debut=2025-01-01&fin=2025-01-07').set('Authorization', `Bearer ${token}`)
+    expect(empty.status).toBe(200)
+    expect(empty.body.totalSignalements.count).toBe(0)
+    expect(empty.body.delaiMoyenTraitementHeures).toBeNull()
+  })
+
+  test('GET /api/admin/stats rejects invalid periods and unauthenticated access', async () => {
+    const invalid = await request(app).get('/api/admin/stats?debut=2026-09-27&fin=2026-09-21')
+    expect(invalid.status).toBe(401)
+    const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
+    const response = await request(app).get('/api/admin/stats?debut=2026-09-27&fin=2026-09-21').set('Authorization', `Bearer ${token}`)
+    expect(response.status).toBe(400)
+  })
+
   test('GET /api/admin/signalements only returns the agent municipality', async () => {
     await db('signalements').insert({ titre: 'Autre mairie', mairie_id: 2, statut: 'recu', created_at: new Date().toISOString() })
     const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
