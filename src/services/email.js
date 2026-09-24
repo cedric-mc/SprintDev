@@ -27,7 +27,10 @@ const sendStatusChange = async (email, signalementId, statut) => {
   })
 }
 
-const buildConfirmation = signalement => ({
+const buildConfirmation = signalement => {
+  const trackingBase = (process.env.TRACKING_URL || 'http://localhost:5173/signalements').replace(/\/$/, '')
+
+  return {
   subject: `Votre signalement #${signalement.id} a été reçu`,
   text: [
     'Merci pour votre signalement.',
@@ -35,9 +38,10 @@ const buildConfirmation = signalement => ({
     `Catégorie : ${signalement.categorie}`,
     `Résumé : ${signalement.description.trim().slice(0, 240)}`,
     'Statut : recu',
-    `Suivi : ${process.env.TRACKING_URL || 'http://localhost:5173/signalements/' + signalement.id}`,
+    `Suivi : ${trackingBase}/${signalement.id}`,
   ].join('\n'),
-})
+  }
+}
 
 const queueConfirmation = async signalement => {
   const message = buildConfirmation(signalement)

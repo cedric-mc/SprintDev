@@ -1,0 +1,307 @@
+openapi: 3.0.3
+info:
+  title: UrbanLink API
+  version: 1.0.0
+  description: API de signalements citoyens et de suivi municipal.
+servers:
+  - url: http://localhost:3001
+    description: Développement local
+paths:
+  /health:
+    get:
+      summary: Vérifier la disponibilité de l'API
+      responses:
+        '200':
+          description: API disponible
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, timestamp]
+                properties:
+                  status: { type: string, example: ok }
+                  timestamp: { type: string, format: date-time }
+  /api/auth/login:
+    post:
+      summary: Connecter un agent municipal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT et profil minimal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/mairies:
+    get:
+      summary: Lister les mairies
+      responses:
+        '200':
+          description: Liste des mairies
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Mairie' }
+  /api/mairies/{id}:
+    get:
+      summary: Obtenir une mairie et ses signalements
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '200':
+          description: Mairie et signalements associés
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/signalements:
+    get:
+      summary: Lister les signalements publics
+      parameters:
+        - { $ref: '#/components/parameters/Categorie' }
+        - { $ref: '#/components/parameters/Statut' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Résultats paginés sans email citoyen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSignalements'
+        '400': { $ref: '#/components/responses/BadRequest' }
+    post:
+      summary: Créer un signalement
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SignalementCreate'
+      responses:
+        '201':
+          description: Signalement créé et email placé en file d'envoi
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/signalements/{id}:
+    get:
+      summary: Obtenir le détail public d'un signalement
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '200': { description: Signalement trouvé }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      summary: Supprimer un signalement
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '200': { description: Signalement supprimé }
+  /api/signalements/{id}/statut:
+    patch:
+      summary: Modifier le statut d'un signalement
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [statut]
+              properties:
+                statut: { $ref: '#/components/schemas/Statut' }
+      responses:
+        '200': { description: Statut modifié et notification tentée }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/admin/signalements:
+    get:
+      summary: Lister les signalements de la période pour l'espace mairie
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/DateStart' }
+        - { $ref: '#/components/parameters/DateEnd' }
+      responses:
+        '200': { description: Signalements du périmètre de l'agent }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/admin/stats:
+    get:
+      summary: Obtenir les KPI de la période
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/DateStart' }
+        - { $ref: '#/components/parameters/DateEnd' }
+      responses:
+        '200':
+          description: Volume, statuts, catégories et délai moyen des résolus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/admin/signalements/purge:
+    delete:
+      summary: Supprimer les signalements antérieurs à une date
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: avant_le
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+      responses:
+        '200': { description: Nombre de signalements supprimés }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+    Categorie:
+      name: categorie
+      in: query
+      schema: { type: string, enum: [Voirie, Éclairage, Propreté, Espaces verts, Mobilier urbain] }
+    Statut:
+      name: statut
+      in: query
+      schema: { $ref: '#/components/schemas/Statut' }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    DateStart:
+      name: debut
+      in: query
+      schema: { type: string, format: date, example: '2026-09-21' }
+    DateEnd:
+      name: fin
+      in: query
+      schema: { type: string, format: date, example: '2026-09-27' }
+  schemas:
+    Statut:
+      type: string
+      enum: [recu, en_cours, resolu]
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string, format: email }
+        role: { type: string, enum: [agent, admin] }
+        mairie_id: { type: integer }
+    Mairie:
+      type: object
+      properties:
+        id: { type: integer }
+        nom: { type: string }
+        ville: { type: string }
+        code_postal: { type: string }
+    SignalementCreate:
+      type: object
+      required: [titre, description, categorie, latitude, longitude, mairie_id, citoyen_email]
+      properties:
+        titre: { type: string, minLength: 3, maxLength: 120 }
+        description: { type: string, minLength: 10, maxLength: 2000 }
+        categorie: { type: string, enum: [Voirie, Éclairage, Propreté, Espaces verts, Mobilier urbain] }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        mairie_id: { type: integer, minimum: 1 }
+        citoyen_email: { type: string, format: email }
+        photo: { type: string, format: binary }
+    Signalement:
+      type: object
+      properties:
+        id: { type: integer }
+        titre: { type: string }
+        description: { type: string }
+        categorie: { type: string }
+        statut: { $ref: '#/components/schemas/Statut' }
+        mairie_id: { type: integer }
+        created_at: { type: string, format: date-time }
+    PaginatedSignalements:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Signalement' }
+        pagination:
+          type: object
+          properties:
+            page: { type: integer }
+            limit: { type: integer }
+            total: { type: integer }
+            totalPages: { type: integer }
+    StatsResponse:
+      type: object
+      properties:
+        periode:
+          type: object
+          properties:
+            debut: { type: string, format: date }
+            fin: { type: string, format: date }
+        totalSignalements:
+          type: object
+          properties:
+            count: { type: integer }
+        parStatut: { type: array, items: { type: object } }
+        parCategorie: { type: array, items: { type: object } }
+        delaiMoyenTraitementHeures: { type: number, nullable: true }
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        details: { type: array, items: { type: string } }
+  responses:
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Authentification requise ou invalide
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Droits insuffisants
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

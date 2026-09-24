@@ -123,8 +123,41 @@ describe('API routes', () => {
     const response = await request(app).get('/api/signalements')
 
     expect(response.status).toBe(200)
-    expect(response.body).toHaveLength(1)
-    expect(response.body[0].mairie.nom).toBe('Mairie de test')
+    expect(response.body.data).toHaveLength(1)
+    expect(response.body.data[0].mairie.nom).toBe('Mairie de test')
+    expect(response.body.data[0].citoyen_email).toBeUndefined()
+  })
+
+  test('GET /api/signalements filters, paginates and validates query parameters', async () => {
+    await db('signalements').insert([
+      { titre: 'Route dégradée', description: 'Une route à réparer', categorie: 'Voirie', mairie_id: 1, statut: 'recu', created_at: '2026-01-01T00:00:00.000Z', citoyen_email: 'a@test.fr' },
+      { titre: 'Lampadaire éteint', description: 'Un éclairage à réparer', categorie: 'Éclairage', mairie_id: 1, statut: 'recu', created_at: '2026-01-03T00:00:00.000Z', citoyen_email: 'b@test.fr' },
+      { titre: 'Route réparée', description: 'Une route réparée', categorie: 'Voirie', mairie_id: 1, statut: 'resolu', created_at: '2026-01-02T00:00:00.000Z', citoyen_email: 'c@test.fr' },
+    ])
+
+    const filtered = await request(app).get('/api/signalements').query({ categorie: 'Voirie', statut: 'recu' })
+    expect(filtered.status).toBe(200)
+    expect(filtered.body.data).toHaveLength(1)
+    expect(filtered.body.data[0].titre).toBe('Route dégradée')
+
+    const page = await request(app).get('/api/signalements').query({ limit: 1, page: 2 })
+    expect(page.status).toBe(200)
+    expect(page.body.data).toHaveLength(1)
+    expect(page.body.pagination).toMatchObject({ page: 2, limit: 1, total: 3, totalPages: 3 })
+    expect(page.body.data[0].titre).toBe('Route réparée')
+    expect(page.body.data[0].citoyen_email).toBeUndefined()
+
+    const empty = await request(app).get('/api/signalements').query({ statut: 'en_cours' })
+    expect(empty.status).toBe(200)
+    expect(empty.body.data).toEqual([])
+    expect(empty.body.pagination.total).toBe(0)
+
+    const invalid = await request(app).get('/api/signalements').query({ categorie: 'Inconnue', limit: 101 })
+    expect(invalid.status).toBe(400)
+    expect(invalid.body.details).toEqual(expect.arrayContaining([
+      'La catégorie de filtre est inconnue',
+      'La limite doit être comprise entre 1 et 100',
+    ]))
   })
 
   test('GET /api/signalements/:id returns a report and handles 404', async () => {
@@ -325,6 +358,42 @@ describe('API routes', () => {
     expect(response.body.parStatut[0].statut).toBe('resolu')
     expect(response.body.recents).toHaveLength(1)
     expect(response.body.recents[0].citoyen_email).toBeUndefined()
+  })
+
+  test('GET /api/admin/stats returns weekly scoped KPIs', async () => {
+    await db('signalements').insert([
+      { titre: 'Cette semaine', description: 'Donnée mairie une', categorie: 'Voirie', mairie_id: 1, statut: 'resolu', created_at: '2026-09-21T10:00:00.000Z', citoyen_email: 'secret@test.fr' },
+      { titre: 'Non résolu', description: 'Donnée non résolue', categorie: 'Voirie', mairie_id: 1, statut: 'recu', created_at: '2026-09-22T10:00:00.000Z' },
+      { titre: 'Autre mairie', description: 'Donnée exclue', categorie: 'Éclairage', mairie_id: 2, statut: 'resolu', created_at: '2026-09-22T10:00:00.000Z' },
+      { titre: 'Hors période', description: 'Donnée hors période', categorie: 'Propreté', mairie_id: 1, statut: 'recu', created_at: '2026-09-10T10:00:00.000Z' },
+    ])
+    const [resolvedId, otherResolvedId] = await db('signalements').whereIn('titre', ['Cette semaine', 'Autre mairie']).pluck('id')
+    await db('statut_historique').insert([
+      { signalement_id: resolvedId, ancien_statut: 'en_cours', nouveau_statut: 'resolu', agent_id: 1, created_at: '2026-09-23T10:00:00.000Z' },
+      { signalement_id: otherResolvedId, ancien_statut: 'en_cours', nouveau_statut: 'resolu', agent_id: 1, created_at: '2026-09-23T10:00:00.000Z' },
+    ])
+    const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
+    const response = await request(app).get('/api/admin/stats?debut=2026-09-21&fin=2026-09-27').set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.periode).toEqual({ debut: '2026-09-21', fin: '2026-09-27' })
+    expect(response.body.totalSignalements.count).toBe(2)
+    expect(response.body.parCategorie).toEqual([{ categorie: 'Voirie', count: 2 }])
+    expect(response.body.delaiMoyenTraitementHeures).toBe(48)
+    expect(response.body.recents.every(report => report.mairie_id === 1 && !report.citoyen_email)).toBe(true)
+
+    const empty = await request(app).get('/api/admin/stats?debut=2025-01-01&fin=2025-01-07').set('Authorization', `Bearer ${token}`)
+    expect(empty.status).toBe(200)
+    expect(empty.body.totalSignalements.count).toBe(0)
+    expect(empty.body.delaiMoyenTraitementHeures).toBeNull()
+  })
+
+  test('GET /api/admin/stats rejects invalid periods and unauthenticated access', async () => {
+    const invalid = await request(app).get('/api/admin/stats?debut=2026-09-27&fin=2026-09-21')
+    expect(invalid.status).toBe(401)
+    const token = jwt.sign({ id: 1, role: 'agent', mairie_id: 1 }, process.env.JWT_SECRET || 'urbanlink_super_secret_2023_please_change')
+    const response = await request(app).get('/api/admin/stats?debut=2026-09-27&fin=2026-09-21').set('Authorization', `Bearer ${token}`)
+    expect(response.status).toBe(400)
   })
 
   test('GET /api/admin/signalements only returns the agent municipality', async () => {

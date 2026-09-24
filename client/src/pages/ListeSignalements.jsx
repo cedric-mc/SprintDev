@@ -1,35 +1,59 @@
-// ListeSignalements.jsx — Baptiste
-// Charge TOUS les signalements sans pagination — bug performance
+import React from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useSignalements } from '../hooks/useSignalements'
 
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+const categories = ['Voirie', 'Éclairage', 'Propreté', 'Espaces verts', 'Mobilier urbain']
+const statuses = [
+  { value: 'recu', label: 'Reçu' },
+  { value: 'en_cours', label: 'En cours' },
+  { value: 'resolu', label: 'Résolu' },
+]
 
 export default function ListeSignalements() {
-  const [signalements, setSignalements] = useState([])
-  const [loading, setLoading] = useState(false)
-  // Pas de gestion d'erreur, pas d'état error
+  const [searchParams, setSearchParams] = useSearchParams()
+  const categorie = searchParams.get('categorie') || ''
+  const statut = searchParams.get('statut') || ''
+  const parsedPage = Number(searchParams.get('page') || 1)
+  const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
+  const { signalements, loading, error, pagination } = useSignalements({ categorie, statut, page, limit: 10 })
 
-  useEffect(() => {
-    setLoading(true)
-    // Fetch sans annulation — fuite mémoire si le composant est démonté
-    axios.get('/api/signalements')
-      .then(res => {
-        setSignalements(res.data)
-        setLoading(false)
-      })
-      .catch(err => {
-        console.log(err) // erreur silencieuse pour l'utilisateur
-        setLoading(false)
-      })
-  }, []) // re-fetch jamais déclenché si les données changent
+  const updateFilter = (name, value) => {
+    const next = new URLSearchParams(searchParams)
+    if (value) next.set(name, value)
+    else next.delete(name)
+    next.set('page', '1')
+    setSearchParams(next)
+  }
 
-  // Pas de filtre, pas de tri, pas de recherche
+  const resetFilters = () => setSearchParams({ page: '1' })
+
   return (
-    <div style={{ padding: 20 }}>
+    <main style={{ padding: 20 }}>
       <h1>Signalements</h1>
-      {loading && <p>Chargement...</p>}
+      <form aria-label="Filtrer les signalements" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+        <label>
+          Catégorie
+          <select value={categorie} onChange={event => updateFilter('categorie', event.target.value)}>
+            <option value="">Toutes</option>
+            {categories.map(category => <option key={category} value={category}>{category}</option>)}
+          </select>
+        </label>
+        <label>
+          Statut
+          <select value={statut} onChange={event => updateFilter('statut', event.target.value)}>
+            <option value="">Tous</option>
+            {statuses.map(status => <option key={status.value} value={status.value}>{status.label}</option>)}
+          </select>
+        </label>
+        <button type="button" onClick={resetFilters}>Réinitialiser</button>
+      </form>
 
-      {/* Liste non virtualisée — freeze sur 1000+ items */}
+      <p role="status" aria-live="polite">
+        {loading ? 'Chargement des signalements...' : error ? 'Impossible de charger les signalements.' : `${pagination.total} signalement${pagination.total > 1 ? 's' : ''}`}
+      </p>
+      {error && <p role="alert">Une erreur est survenue. Réessayez.</p>}
+      {!loading && !error && signalements.length === 0 && <p>Aucun signalement ne correspond à ces filtres.</p>}
+
       {signalements.map(s => (
         <div key={s.id} style={{
           border: '1px solid #e5e7eb',
@@ -47,12 +71,16 @@ export default function ListeSignalements() {
           }}>
             {s.statut}
           </span>
-          {/* Date affichée brute — pas de formatage */}
-          <p style={{ color: '#6b7280', fontSize: 12 }}>{s.created_at}</p>
+          <p style={{ color: '#6b7280', fontSize: 12 }}>{s.created_at ? new Date(s.created_at).toLocaleDateString('fr-FR') : ''}</p>
         </div>
       ))}
-
-      {/* Aucun message si liste vide */}
-    </div>
+      {pagination.totalPages > 1 && (
+        <nav aria-label="Pagination des signalements" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button type="button" disabled={page <= 1} onClick={() => setSearchParams({ categorie, statut, page: String(page - 1) })}>Précédent</button>
+          <span aria-current="page">Page {page} sur {pagination.totalPages}</span>
+          <button type="button" disabled={page >= pagination.totalPages} onClick={() => setSearchParams({ categorie, statut, page: String(page + 1) })}>Suivant</button>
+        </nav>
+      )}
+    </main>
   )
 }

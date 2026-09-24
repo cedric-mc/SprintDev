@@ -11,17 +11,17 @@ En tant que citoyen, je veux recevoir un email de confirmation à la création d
 
 ## Critères d’acceptation
 
-- [ ] Après une création valide, un message est placé dans un mécanisme d’envoi fiable et traçable.
-- [ ] L’email contient le numéro de suivi, la catégorie, un résumé de la description, le statut `recu` et un lien vers le suivi.
-- [ ] L’adresse email est validée avant création ou le contrat permet explicitement un signalement anonyme ; le choix est documenté.
-- [ ] L’API ne bloque pas inutilement la réponse HTTP sur le fournisseur SMTP et n’annonce pas un envoi réussi si la remise a échoué.
-- [ ] Les erreurs sont journalisées sans mot de passe, token ni contenu personnel inutile.
-- [ ] En configuration de test, les emails sont capturables sans envoi réel.
+- [x] Après une création valide, un message est placé dans la table `email_deliveries`, avec statut et nombre de tentatives traçables.
+- [x] L’email contient le numéro de suivi, la catégorie, un résumé de la description, le statut `recu` et un lien vers le suivi.
+- [x] L’adresse email est obligatoire et validée avant création ; le contrat ne prévoit pas de signalement anonyme.
+- [x] L’API répond sans attendre le fournisseur SMTP ; une remise échouée reste en `retry` ou `failed` et n’est pas annoncée comme envoyée.
+- [x] Les erreurs journalisent uniquement l’identifiant de livraison, le nombre de tentatives et le message technique.
+- [x] En configuration de test, Nodemailer est mocké et les livraisons sont inspectables en base SQLite mémoire.
 
 ## Tests de validation
 
-- [ ] Email envoyé avec référence, catégorie et lien corrects.
-- [ ] Email invalide refusé avec 400 ; panne SMTP, retry et état d’échec vérifiables.
+- [x] Email envoyé avec référence, catégorie et lien corrects.
+- [x] Email invalide refusé avec 400 ; panne SMTP, retry et état d’échec vérifiables.
 - [ ] Délai cible inférieur à 30 secondes en environnement d’intégration.
 
 ## Dépendances et décisions

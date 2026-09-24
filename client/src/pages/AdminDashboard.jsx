@@ -8,12 +8,24 @@ const statuses = [
   { value: 'resolu', label: 'Résolu' },
 ]
 
+const getCurrentWeek = () => {
+  const today = new Date()
+  const monday = new Date(today)
+  const offset = (today.getDay() + 6) % 7
+  monday.setDate(today.getDate() - offset)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  const format = date => date.toISOString().slice(0, 10)
+  return { debut: format(monday), fin: format(sunday) }
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [reports, setReports] = useState([])
   const [stats, setStats] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState(getCurrentWeek)
   const token = localStorage.getItem('urbanlink_token')
   const user = JSON.parse(localStorage.getItem('urbanlink_user') || 'null')
   const headers = { Authorization: `Bearer ${token}` }
@@ -25,10 +37,11 @@ export default function AdminDashboard() {
   }
 
   const loadDashboard = async () => {
+    setLoading(true)
     try {
       const [reportsResponse, statsResponse] = await Promise.all([
-        axios.get('/api/admin/signalements', { headers }),
-        axios.get('/api/admin/stats', { headers }),
+        axios.get('/api/admin/signalements', { headers, params: period }),
+        axios.get('/api/admin/stats', { headers, params: period }),
       ])
       setReports(reportsResponse.data)
       setStats(statsResponse.data)
@@ -50,7 +63,12 @@ export default function AdminDashboard() {
       return
     }
     loadDashboard()
-  }, [])
+  }, [period.debut, period.fin])
+
+  const updatePeriod = event => {
+    event.preventDefault()
+    loadDashboard()
+  }
 
   const updateStatus = async (id, statut) => {
     try {
@@ -73,7 +91,19 @@ export default function AdminDashboard() {
         <button type="button" onClick={logout}>Se déconnecter</button>
       </header>
       {error && <p role="alert">{error}</p>}
-      {stats && <p role="status">{stats.totalSignalements.count} signalement(s) dans votre périmètre.</p>}
+      <form onSubmit={updatePeriod} aria-label="Période des statistiques" style={{ display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap', margin: '20px 0' }}>
+        <label>Du <input type="date" value={period.debut} onChange={event => setPeriod({ ...period, debut: event.target.value })} /></label>
+        <label>Au <input type="date" value={period.fin} onChange={event => setPeriod({ ...period, fin: event.target.value })} /></label>
+        <button type="submit">Actualiser</button>
+      </form>
+      {stats && (
+        <section aria-label="Statistiques de la période" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 20 }}>
+          <article><strong>{stats.totalSignalements.count}</strong><span> signalement(s)</span></article>
+          <article><strong>{stats.delaiMoyenTraitementHeures === null ? '—' : `${stats.delaiMoyenTraitementHeures} h`}</strong><span> délai moyen</span></article>
+          <article><strong>{stats.periode.debut}</strong><span> au {stats.periode.fin}</span></article>
+          <div><h2>Catégories fréquentes</h2>{stats.parCategorie.length ? <ol>{stats.parCategorie.map(item => <li key={item.categorie}>{item.categorie} : {item.count}</li>)}</ol> : <p>Aucune donnée pour cette période.</p>}</div>
+        </section>
+      )}
       {!reports.length ? <p>Aucun signalement à traiter.</p> : (
         <section aria-label="Signalements de la mairie">
           {reports.map(report => (

@@ -7,6 +7,24 @@ const STATUTS = ['recu', 'en_cours', 'resolu']
 const CATEGORIES = ['Voirie', 'Éclairage', 'Propreté', 'Espaces verts', 'Mobilier urbain']
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const parseListQuery = query => {
+  const { categorie, statut } = query
+  const page = Number(query.page || 1)
+  const limit = Number(query.limit || 20)
+  const errors = []
+
+  if (categorie && !CATEGORIES.includes(categorie)) errors.push('La catégorie de filtre est inconnue')
+  if (statut && !STATUTS.includes(statut)) errors.push('Le statut de filtre est inconnu')
+  if (!Number.isInteger(page) || page < 1) errors.push('La page doit être un entier positif')
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) errors.push('La limite doit être comprise entre 1 et 100')
+  if (errors.length) {
+    const error = new HttpError(400, 'Paramètres de liste invalides')
+    error.details = errors
+    throw error
+  }
+  return { categorie, statut, page, limit }
+}
+
 const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -65,7 +83,7 @@ const uploadPhoto = (req, res, next) => upload.single('photo')(req, res, error =
 })
 
 const list = async (req, res) => {
-  res.json(await SignalementModel.findAll())
+  res.json(await SignalementModel.findAll(parseListQuery(req.query)))
 }
 
 const getById = async (req, res) => {
