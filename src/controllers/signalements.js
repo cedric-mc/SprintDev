@@ -82,8 +82,8 @@ const create = async (req, res) => {
 
   const id = typeof created === 'object' ? created.id : created
 
-  sendConfirmation(citoyen_email, id).catch(error => {
-    console.error('Email confirmation failed:', error.message)
+  sendConfirmation(citoyen_email, id, categorie, description).catch(error => {
+    console.error('Email confirmation queue failed', { error: error.message })
   })
 
   res.status(201).json({ id, message: 'Signalement créé' })

@@ -5,6 +5,7 @@
 const express = require('express')
 const cors = require('cors')
 const { errorHandler } = require('./middleware/errorHandler')
+const { processPendingEmails } = require('./services/email')
 require('dotenv').config()
 
 const app = express()
@@ -33,6 +34,11 @@ const PORT = process.env.PORT || 3001
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`UrbanLink API on :${PORT}`)
+    void processPendingEmails().catch(error => console.error('Email delivery processing failed', { error: error.message }))
+    const emailWorker = setInterval(() => {
+      void processPendingEmails().catch(error => console.error('Email delivery processing failed', { error: error.message }))
+    }, 1000)
+    emailWorker.unref()
   })
 }
 
