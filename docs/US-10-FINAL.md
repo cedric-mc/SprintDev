@@ -24,5 +24,6 @@ En tant que visiteur, je veux une application accessible au clavier et aux lecte
 ## Validation technique
 
 - [x] Le build client Vite passe après l’ajout de la navigation accessible, du lien d’évitement, des styles de focus et des annonces d’erreur.
+- [x] Le README et le contrat OpenAPI documentent les commandes de vérification et les parcours concernés.
 - [ ] Le score Lighthouse Accessibility supérieur à 90 et la vérification avec un lecteur d’écran restent à documenter.
 - Dépend de US-01, US-02 et US-05 ; doit être vérifiée sur les parcours de création, liste, carte et filtres.
