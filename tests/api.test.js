@@ -123,8 +123,41 @@ describe('API routes', () => {
     const response = await request(app).get('/api/signalements')
 
     expect(response.status).toBe(200)
-    expect(response.body).toHaveLength(1)
-    expect(response.body[0].mairie.nom).toBe('Mairie de test')
+    expect(response.body.data).toHaveLength(1)
+    expect(response.body.data[0].mairie.nom).toBe('Mairie de test')
+    expect(response.body.data[0].citoyen_email).toBeUndefined()
+  })
+
+  test('GET /api/signalements filters, paginates and validates query parameters', async () => {
+    await db('signalements').insert([
+      { titre: 'Route dégradée', description: 'Une route à réparer', categorie: 'Voirie', mairie_id: 1, statut: 'recu', created_at: '2026-01-01T00:00:00.000Z', citoyen_email: 'a@test.fr' },
+      { titre: 'Lampadaire éteint', description: 'Un éclairage à réparer', categorie: 'Éclairage', mairie_id: 1, statut: 'recu', created_at: '2026-01-03T00:00:00.000Z', citoyen_email: 'b@test.fr' },
+      { titre: 'Route réparée', description: 'Une route réparée', categorie: 'Voirie', mairie_id: 1, statut: 'resolu', created_at: '2026-01-02T00:00:00.000Z', citoyen_email: 'c@test.fr' },
+    ])
+
+    const filtered = await request(app).get('/api/signalements').query({ categorie: 'Voirie', statut: 'recu' })
+    expect(filtered.status).toBe(200)
+    expect(filtered.body.data).toHaveLength(1)
+    expect(filtered.body.data[0].titre).toBe('Route dégradée')
+
+    const page = await request(app).get('/api/signalements').query({ limit: 1, page: 2 })
+    expect(page.status).toBe(200)
+    expect(page.body.data).toHaveLength(1)
+    expect(page.body.pagination).toMatchObject({ page: 2, limit: 1, total: 3, totalPages: 3 })
+    expect(page.body.data[0].titre).toBe('Route réparée')
+    expect(page.body.data[0].citoyen_email).toBeUndefined()
+
+    const empty = await request(app).get('/api/signalements').query({ statut: 'en_cours' })
+    expect(empty.status).toBe(200)
+    expect(empty.body.data).toEqual([])
+    expect(empty.body.pagination.total).toBe(0)
+
+    const invalid = await request(app).get('/api/signalements').query({ categorie: 'Inconnue', limit: 101 })
+    expect(invalid.status).toBe(400)
+    expect(invalid.body.details).toEqual(expect.arrayContaining([
+      'La catégorie de filtre est inconnue',
+      'La limite doit être comprise entre 1 et 100',
+    ]))
   })
 
   test('GET /api/signalements/:id returns a report and handles 404', async () => {
