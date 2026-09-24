@@ -15,6 +15,9 @@ jest.mock('nodemailer', () => ({
   })),
 }))
 
+const nodemailer = require('nodemailer')
+const { processPendingEmails, queueConfirmation } = require('../src/services/email')
+
 describe('API routes', () => {
   beforeAll(async () => {
     await db.migrate.latest({ directory: path.join(__dirname, '../db/migrations') })
@@ -23,6 +26,7 @@ describe('API routes', () => {
   beforeEach(async () => {
     await db('statut_historique').delete()
     await db('agents').delete()
+    await db('email_deliveries').delete()
     await db('signalements').delete()
     await db('mairies').delete()
     await db('mairies').insert({
@@ -158,6 +162,15 @@ describe('API routes', () => {
     expect(response.body.id).toBeDefined()
     await expect(db('signalements').where('id', response.body.id).first())
       .resolves.toMatchObject({ titre: 'Banc cassé', statut: 'recu' })
+    await expect(db('email_deliveries').where('recipient', 'citoyen@test.fr').first())
+      .resolves.toMatchObject({
+        status: 'sent',
+        subject: `Votre signalement #${response.body.id} a été reçu`,
+      })
+    const delivery = await db('email_deliveries').where('recipient', 'citoyen@test.fr').first()
+    expect(delivery.text).toContain('Catégorie : Mobilier urbain')
+    expect(delivery.text).toContain('Statut : recu')
+    expect(delivery.text).toContain(`/signalements/${response.body.id}`)
   })
 
   test('POST /api/signalements rejects invalid report data', async () => {
@@ -189,6 +202,32 @@ describe('API routes', () => {
 
     expect(response.status).toBe(400)
     expect(response.body.fields).toBeDefined()
+  })
+
+  test('email delivery records SMTP failures after retries', async () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+    nodemailer.createTransport.mockReturnValue({
+      sendMail: jest.fn().mockRejectedValue(new Error('SMTP indisponible')),
+    })
+    try {
+      const deliveryId = await queueConfirmation({
+        id: 42,
+        citoyen_email: 'citoyen@test.fr',
+        categorie: 'Voirie',
+        description: 'Une description suffisamment longue',
+      })
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await processPendingEmails()
+        await db('email_deliveries').where('id', deliveryId).update({ next_attempt_at: new Date(0).toISOString() })
+      }
+
+      await expect(db('email_deliveries').where('id', deliveryId).first())
+        .resolves.toMatchObject({ status: 'failed', attempts: 3, last_error: 'SMTP indisponible' })
+      expect(consoleError).toHaveBeenCalledTimes(3)
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   test('POST /api/signalements rejects non-image uploads', async () => {
