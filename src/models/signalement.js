@@ -5,24 +5,48 @@ const db = require('../config/db')
 
 // Ces fonctions sont bien écrites mais ne sont appelées nulle part
 const SignalementModel = {
-  findAll: () =>
-    db('signalements as s')
+  findAll: ({ categorie, statut, page = 1, limit = 20 } = {}) => {
+    const baseQuery = db('signalements as s')
       .leftJoin('mairies as m', 'm.id', 's.mairie_id')
       .select(
-        's.*',
+        's.id', 's.titre', 's.description', 's.categorie', 's.latitude', 's.longitude',
+        's.statut', 's.photo_path', 's.mairie_id', 's.created_at', 's.updated_at',
         'm.id as mairie_ref_id',
         'm.nom as mairie_nom',
         'm.ville as mairie_ville',
         'm.code_postal as mairie_code_postal',
         'm.email as mairie_email',
       )
-      .orderBy('s.created_at', 'desc')
-      .then(rows => rows.map(({ mairie_ref_id, mairie_nom, mairie_ville, mairie_code_postal, mairie_email, ...signalement }) => ({
+      .modify(query => {
+        if (categorie) query.where('s.categorie', categorie)
+        if (statut) query.where('s.statut', statut)
+      })
+
+    const countQuery = db('signalements as s')
+      .count('s.id as total')
+      .modify(query => {
+        if (categorie) query.where('s.categorie', categorie)
+        if (statut) query.where('s.statut', statut)
+      })
+
+    return Promise.all([
+      baseQuery.clone().orderBy('s.created_at', 'desc').orderBy('s.id', 'desc').limit(limit).offset((page - 1) * limit),
+      countQuery,
+    ]).then(([rows, countRows]) => ({
+      data: rows.map(({ mairie_ref_id, mairie_nom, mairie_ville, mairie_code_postal, mairie_email, ...signalement }) => ({
         ...signalement,
         mairie: mairie_ref_id
           ? { id: mairie_ref_id, nom: mairie_nom, ville: mairie_ville, code_postal: mairie_code_postal, email: mairie_email }
           : null,
-      }))),
+      })),
+      pagination: {
+        page,
+        limit,
+        total: Number(countRows[0].total),
+        totalPages: Math.ceil(Number(countRows[0].total) / limit),
+      },
+    }))
+  },
 
   findById: (id) =>
     db('signalements').where('id', id).select(

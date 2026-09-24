@@ -20,7 +20,7 @@ L.Icon.Default.mergeOptions({
 })
 
 export default function CarteSignalements() {
-  const { signalements, loading, error } = useSignalements()
+  const { signalements, loading, error } = useSignalements({ limit: 100 })
   const points = signalements.filter(signalement => {
     const latitude = Number(signalement.latitude)
     const longitude = Number(signalement.longitude)

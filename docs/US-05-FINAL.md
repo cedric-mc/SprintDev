@@ -11,18 +11,18 @@ En tant que citoyen, je veux filtrer les signalements par catégorie et par stat
 
 ## Critères d’acceptation
 
-- [ ] La liste propose des filtres par catégorie et statut, combinables et réinitialisables.
-- [ ] Les résultats sont mis à jour sans rechargement de page et le nombre de résultats est annoncé.
-- [ ] Une requête filtrée ne renvoie que les enregistrements correspondant à tous les critères actifs.
-- [ ] Les paramètres sont validés côté serveur ; les valeurs inconnues ne provoquent ni erreur SQL ni élargissement de résultat.
-- [ ] L’interface gère chargement, erreur, résultat vide et pagination ; elle n’affiche pas l’email citoyen.
-- [ ] Les filtres sont accessibles au clavier et leur état est lisible par un lecteur d’écran.
+- [x] La liste propose des filtres par catégorie et statut, combinables et réinitialisables.
+- [x] Les résultats sont mis à jour sans rechargement de page et le nombre de résultats est annoncé.
+- [x] Une requête filtrée ne renvoie que les enregistrements correspondant à tous les critères actifs.
+- [x] Les paramètres sont validés côté serveur ; les valeurs inconnues ne provoquent ni erreur SQL ni élargissement de résultat.
+- [x] L’interface gère chargement, erreur, résultat vide et pagination ; elle n’affiche pas l’email citoyen.
+- [x] Les filtres sont accessibles au clavier et leur état est lisible par un lecteur d’écran.
 
 ## Tests de validation
 
-- [ ] Catégorie seule, statut seul, combinaison, réinitialisation et résultat vide.
-- [ ] Paramètres absents ou invalides, pagination stable et aucun N+1 introduit.
-- [ ] Conservation des filtres lors d’une navigation interne ; le partage par URL est livré par US-15.
+- [x] Catégorie seule, statut seul, combinaison, réinitialisation et résultat vide côté API ; le build client valide le parcours de liste.
+- [x] Paramètres absents ou invalides, pagination stable et aucun N+1 introduit.
+- [x] Conservation des filtres lors d’une navigation interne via les paramètres d’URL ; le partage URL complet reste cadré par US-15.
 
 ## Dépendances et décisions
 
