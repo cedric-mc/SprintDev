@@ -8,6 +8,7 @@
     "dev": "nodemon src/index.js",
     "lint": "eslint src tests db",
     "test": "jest --coverage --coverageReporters=text --coverageReporters=json-summary --passWithNoTests",
+    "test:integration": "jest tests/api.test.js --runInBand --coverage=false",
     "migrate": "knex migrate:latest",
     "seed": "node db/seed.js"
   },
