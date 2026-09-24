@@ -4,6 +4,8 @@
 
 const express = require('express')
 const cors = require('cors')
+const { errorHandler } = require('./middleware/errorHandler')
+const { processPendingEmails } = require('./services/email')
 require('dotenv').config()
 
 const app = express()
@@ -18,7 +20,8 @@ app.use(express.json({ limit: '50mb' })) // trop permissif, risque DoS
 
 app.use('/api/signalements', require('./routes/signalements'))
 app.use('/api/mairies',      require('./routes/mairies'))
-app.use('/api/admin',        require('./routes/admin'))  // aucune protection
+app.use('/api/auth',         require('./routes/auth'))
+app.use('/api/admin',        require('./routes/admin'))
 app.use('/api/debug',        require('./routes/debug'))  // À RETIRER EN PROD !!!
 
 // Health check — répond 200 même si DB est down
@@ -26,16 +29,18 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() })
 })
 
-// Error handler — expose stack traces en prod (bug)
-app.use((err, req, res, next) => {
-  console.error(err)
-  res.status(500).json({ error: err.message, stack: err.stack })
-})
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
-  console.log(\`UrbanLink API on :\${PORT}\`)
-  console.log(\`JWT_SECRET: \${process.env.JWT_SECRET}\`) // secret logué au démarrage !
-})
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`UrbanLink API on :${PORT}`)
+    void processPendingEmails().catch(error => console.error('Email delivery processing failed', { error: error.message }))
+    const emailWorker = setInterval(() => {
+      void processPendingEmails().catch(error => console.error('Email delivery processing failed', { error: error.message }))
+    }, 1000)
+    emailWorker.unref()
+  })
+}
 
 module.exports = app

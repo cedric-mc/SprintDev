@@ -2,10 +2,13 @@
 // Baptiste l'utilisait pour reset la DB en dev
 
 const db = require('../src/config/db')
+const { hashPassword } = require('../src/services/passwords')
 
 async function seed() {
   // Reset brutal — attention en prod
   await db('signalements').delete()
+  await db('statut_historique').delete()
+  await db('agents').delete()
   await db('mairies').delete()
 
   await db('mairies').insert([
@@ -17,26 +20,31 @@ async function seed() {
       email: 'mairie3@lyon.fr', latitude: 45.7578, longitude: 4.8549 },
   ])
 
+  await db('agents').insert([
+    { email: 'agent1@urbanlink.test', password_hash: hashPassword('UrbanLink123!'), role: 'agent', mairie_id: 1 },
+    { email: 'admin@urbanlink.test', password_hash: hashPassword('UrbanLink123!'), role: 'admin', mairie_id: 1 },
+  ])
+
   const categories = ['Voirie', 'Éclairage', 'Propreté', 'Espaces verts', 'Mobilier urbain', 'Autre']
   const statuts = ['recu', 'recu', 'en_cours', 'en_cours', 'resolu']
 
   const signalements = []
   for (let i = 1; i <= 87; i++) {
     signalements.push({
-      titre: \`Signalement test #\${i}\`,
-      description: \`Description du problème \${i}. Merci de traiter rapidement.\`,
+      titre: `Signalement test #${i}`,
+      description: `Description du problème ${i}. Merci de traiter rapidement.`,
       categorie: categories[i % categories.length],
       latitude:  45.748 + (Math.random() * 0.04 - 0.02),
       longitude: 4.830  + (Math.random() * 0.04 - 0.02),
       statut: statuts[i % statuts.length],
-      citoyen_email: \`citoyen\${i}@test.fr\`,
+      citoyen_email: `citoyen${i}@test.fr`,
       mairie_id: (i % 3) + 1,
       created_at: new Date(Date.now() - i * 86400000).toISOString(),
     })
   }
 
   await db('signalements').insert(signalements)
-  console.log(\`Seed OK — \${signalements.length} signalements créés\`)
+  console.log(`Seed OK — ${signalements.length} signalements créés`)
   process.exit(0)
 }
 
