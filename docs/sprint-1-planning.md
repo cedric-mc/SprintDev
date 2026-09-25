@@ -69,7 +69,7 @@
 2. **Création :** US-01 et ses tests API/front-end.
 3. **Carte :** US-02 après stabilisation du contrat de lecture.
 4. **Statut :** US-03 après clarification de l’authentification et des rôles.
-5. **Fin de sprint :** intégration, code review, correction des critères d’acceptation et préparation de la démonstration.
+5. **Fin de sprint :** intégration, validation locale, correction des critères d’acceptation et préparation de la démonstration.
 
 ## Definition of Done du sprint
 
@@ -77,14 +77,14 @@
 - Les tests ajoutés passent localement et dans GitHub Actions.
 - La couverture API atteint au moins 70 % ou l’écart est documenté et accepté par le PO.
 - Le lint est vert.
-- Chaque US possède une branche et une PR relue par l’autre membre.
+- Chaque US possède une branche dédiée et fait l’objet d’une validation locale avant intégration.
 - Aucun secret, email citoyen ou stack trace n’est exposé dans les parcours livrés.
 - Le README et la documentation nécessaire sont à jour.
 - Une version démontrable est disponible sur staging avant la Sprint Review.
 
 ## Risques et décisions à obtenir
 
-- **Capacité :** 26 points sont planifiés ; confirmer la vélocité réelle du binôme.
+- **Capacité :** 26 points sont planifiés ; la vélocité réelle est calculée sur la base du travail effectué en solo.
 - **US-03 :** l’authentification et les rôles ne sont pas encore implémentés ; décider si leur socle est inclus dans l’US ou traité comme prérequis.
 - **US-02 :** choisir la bibliothèque de clustering compatible avec React-Leaflet.
 - **CI :** vérifier dans GitHub la protection de `main` et le statut réel du workflow.
