@@ -79,7 +79,7 @@ Une User Story est considérée terminée lorsque :
 - [ ] La navigation clavier et l’accessibilité du parcours impacté sont vérifiées.
 - [ ] La performance du parcours impacté est vérifiée ; Lighthouse respecte la cible du workshop.
 - [ ] Les erreurs et états de chargement sont gérés sans fuite d’information sensible.
-- [ ] Une PR dédiée à la branche `feature/US-XX-nom-court` a été relue par l’autre membre du binôme.
+- [ ] Une PR ou une validation de cohérence a été effectuée avant intégration, conformément au contexte de travail solo.
 - [ ] La CI est verte avant merge vers `develop`.
 - [ ] Le README, la documentation API ou les variables d’environnement sont mis à jour si nécessaire.
 - [ ] La démonstration sur staging est possible avant la Sprint Review.
@@ -87,7 +87,7 @@ Une User Story est considérée terminée lorsque :
 ## 6. Stratégie Git et risques à suivre
 
 - Une branche par User Story : `feature/US-XX-nom-court`.
-- PR obligatoire vers `develop`, avec revue documentée par l’autre membre.
+- Le merge vers `develop` doit se faire après validation locale et contrôle des tests, dans le cadre d’un travail réalisé seul.
 - Merge vers `main` après validation de la Sprint Review.
 - Les blocages non résolus dans les deux heures sont signalés au PO.
 - À confirmer avec le PO : nom du second développeur, capacité réelle du sprint, protection GitHub de `main` et URL de staging.
