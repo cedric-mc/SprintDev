@@ -1,0 +1,9 @@
+remote_theme: pages-themes/minimal
+plugins:
+  - jekyll-seo-tag
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-include-cache
+title: 📚 Bibliothèque Numérique
+show_downloads: true
+description: Gestion complète d'une bibliothèque numérique avec Python et interface terminal interactive.
