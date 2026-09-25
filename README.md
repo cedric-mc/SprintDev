@@ -94,6 +94,17 @@ npm --prefix client run build
 
 Dernière vérification locale : 23 tests d’intégration passants, `89,11 %` d’instructions et `92,76 %` de lignes couvertes globalement. Le build client passe ; Vite signale seulement que le bundle JavaScript dépasse 500 kB.
 
+## Audit Lighthouse
+
+Le rapport Lighthouse généré le 2026-09-25 sur la page d’accueil de l’application donne les scores suivants :
+
+- Performance : 57/100
+- Accessibility : 98/100
+- Best Practices : 100/100
+- SEO : 82/100
+
+Le rapport complet est disponible dans `client/localhost_2026-09-25_08-30-42.report.html`.
+
 ## Routes principales
 
 - `GET /api/signalements` : liste paginée, filtres `categorie` et `statut`.
